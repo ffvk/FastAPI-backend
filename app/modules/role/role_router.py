@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.utils.auth import get_current_user
-from typing import Optional
 from app.modules.user.user_model import UserModel
 from app.modules.role.role_schema import CreateRoleSchema, UpdateRoleSchema, DeleteRoleSchema
 from app.modules.role.role_service import get_all_roles,get_role_by_id, create_role, update_role, delete_existing_role
@@ -58,11 +57,11 @@ def delete_role_endpoint(
     current_user: UserModel = Depends(get_current_user)
     ):
     """
-    Soft delete a order item by ID.
+    Soft delete a role by ID.
     """
    
     delete_existing_role(db=db, role_id=role_id, current_user=current_user)
     
     
-    return {"message" : "Order item deleted successfully",}
+    return {"message" : "Role deleted successfully",}
 

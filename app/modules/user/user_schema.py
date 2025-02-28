@@ -37,16 +37,21 @@ class CreateUseSchema(BaseModel):
 
 class UpdateUserSchema(BaseModel):
     user_name: Optional[str]
-    email: Optional[str]
-    password_hash: Optional[str]
+    # email: Optional[str]
+    # password_hash: Optional[str]
     phone_number: Optional[int]
     is_active: Optional[bool]
 
-    role_id : Optional[int]
+    # role_id : Optional[int]
     
 
 class DeleteUserSchema(BaseModel):
     message : str
+
+
+class UpdateUserRoleSchema(BaseModel):
+    role_id : Optional[int]
+
 
 class Config:
     orm_mode = True

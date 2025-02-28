@@ -37,7 +37,7 @@ def get_role_by_id(db: Session, role_id: int, current_user: UserModel):
     if not get_role:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order item not found"
+            detail="Role not found"
         )
     
     user_dict = {user.user_id: user.user_name for user in db.query(UserModel).all()}
@@ -81,11 +81,11 @@ def update_role(
 ):
     try:
         # Fetch existing order item
-        update_role = db.query(RoleModel).filter(
+        get_update_role = db.query(RoleModel).filter(
             RoleModel.role_id == role_id, RoleModel.is_deleted == False
         ).first()
 
-        if not update_role:
+        if not get_update_role:
             raise HTTPException(status_code=404, detail="Role not found")
 
 
@@ -96,15 +96,15 @@ def update_role(
         for key, value in update_data.items():
         #     if key == 'dimention_type' and value:
         #         value = DimentionTypeEnum(value)
-            setattr(update_role, key, value)
+            setattr(get_update_role, key, value)
 
         # Commit changes to the database
         db.commit()
-        db.refresh(update_role)
+        db.refresh(get_update_role)
 
         return {
         "message": "Role updated successfully",
-        "role": update_role
+        "role": get_update_role
         }
 
     except Exception as e:
