@@ -31,7 +31,8 @@ origins = [
     "http://localhost:5173",  # Your frontend URL
     "http://127.0.0.1:5173", # Alternative frontend URL
     "http://209.105.242.30:7778", # live frontend URL
-    "https://demo.avirise.in"
+    "https://demo.avirise.in",
+    "http://localhost:3000"
 
 ]
 
@@ -52,7 +53,7 @@ def custom_openapi():
     openapi_schema = get_openapi(
         title="FastAPI MySQL App",
         version="1.0.0",
-        description="API documentation for Logistic Application",
+        description="API documentation for PMS Application",
         routes=app.routes,
     )
 
