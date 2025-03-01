@@ -31,7 +31,8 @@ origins = [
     "http://localhost:5173",  # Your frontend URL
     "http://127.0.0.1:5173", # Alternative frontend URL
     "http://209.105.242.30:7778", # live frontend URL
-    "https://demo.avirise.in"
+    "https://demo.avirise.in",
+    "http://localhost:3000"
 
 ]
 
