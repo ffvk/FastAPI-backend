@@ -4,14 +4,16 @@ from app.db.session import get_db
 from app.modules.user.user_model import UserModel
 from app.utils.jwt import create_access_token
 from app.utils.password import verify_password
-from datetime import timedelta
+from datetime import timedelta,datetime
 from app.utils.email import send_email, render_email_template
 from app.utils.password import hash_password, verify_password, validate_password
 from app.core.config import settings
-from datetime import  timedelta
 from app.utils.jwt import create_access_token
 from app.utils.auth import get_current_user
-from app.modules.user.user_service import PasswordResetTokenGenerator
+from app.modules.user.auth_service import PasswordResetTokenGenerator
+# from app.modules.role.role_model import RoleModel
+from app.modules.user.user_schema import CreateUseSchema, DeleteUserSchema
+from app.modules.user.auth_service import register_user, verify_email, send_verification_email
 
 
 
@@ -108,6 +110,7 @@ def forgot_password(email: str = Form(...), db: Session = Depends(get_db)):
     # Return a success message to the client
     return {"message": "Password reset link sent to your email"}
 
+
 @router.post("/reset-password", status_code=200)
 def reset_password(token: str = Form(...), new_password: str = Form(...), db: Session = Depends(get_db)):
    
@@ -150,3 +153,24 @@ def reset_password(token: str = Form(...), new_password: str = Form(...), db: Se
     return {"message": "Password reset successful"}
 
 
+@router.post("/register", response_model=DeleteUserSchema)
+async def register_user_endpoint(user_data: CreateUseSchema, db: Session = Depends(get_db)):
+    
+    await register_user(db=db, register_user_data=user_data)
+    
+    return {"message" : "Register successfully",}
+
+
+@router.get("/verify-email", response_model=DeleteUserSchema)
+def verify_email_endpoint(token: str, db: Session = Depends(get_db)):
+
+    verify_email(token=token, db=db )
+
+    return {"message": "Email verified successfully!"}
+
+
+
+@router.post("/send-verification-email", response_model=DeleteUserSchema)
+async  def send_verification_email_endpoint(email: str, token: str):
+    await send_verification_email(email=email, token=token )
+    return {"message": "Email successfully send"}

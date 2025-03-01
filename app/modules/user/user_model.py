@@ -13,7 +13,7 @@ class UserModel(Base):
     user_name = Column(String(255), nullable=False)
     phone_number = Column(String(20), nullable=True)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

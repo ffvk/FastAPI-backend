@@ -2,10 +2,9 @@ from sqlalchemy.orm import Session
 import json
 from fastapi import HTTPException,status
 from app.modules.user.user_model import UserModel
-from itsdangerous import URLSafeTimedSerializer
-from app.core.config import settings
-from app.modules.user.user_schema import CreateUseSchema, UpdateUserSchema, UpdateUserRoleSchema
+from app.modules.user.user_schema import CreateUseSchema, UpdateUserSchema, UpdateUserRoleSchema, UpdateUserEmailSchema
 from app.modules.role.role_model import RoleModel
+from app.utils.password import hash_password
 
 
 def get_all_users(db: Session , current_user:UserModel):
@@ -57,8 +56,10 @@ def get_user_by_id(db: Session, user_id: int, current_user: UserModel):
 def create_user(db: Session, user_service_data: CreateUseSchema, current_user: UserModel):
     
     try:
+        hashed_password = hash_password(user_service_data.password_hash)
 
         user_dict = user_service_data.dict(exclude_unset=True)
+        user_dict["password_hash"] = hashed_password
         user_dict["created_by"] = current_user.user_id
         new_user = UserModel(**user_dict)
     
@@ -158,28 +159,41 @@ def update_user_role(db: Session, user_id: int, update_user_role_data:UpdateUser
             "user_role" : get_user}
     
 
+def update_user_email(
+    db: Session, 
+    user_id: int, 
+    update_user_email_data: UpdateUserEmailSchema, 
+    current_user: UserModel 
+    ):
+
+    try:
+            get_user_data = db.query(UserModel).filter(
+                UserModel.user_id == user_id, UserModel.is_deleted == False
+            ).first()
+
+            if not get_user_data:
+                raise HTTPException(status_code=404, detail="User not found")
 
 
-class PasswordResetTokenGenerator:
-    def __init__(self):
-        self.serializer = URLSafeTimedSerializer(settings.jwt_secret_key)
+            if not hasattr(update_user_email_data, "email") or not update_user_email_data.email:
+                raise HTTPException(status_code=400, detail="Email is required")
 
-    def make_token(self, user_id: int) -> str:
-        """
-        Generate a password reset token.
-        """
-        return self.serializer.dumps(user_id, salt="password-reset")
-    
-    def confirm_token(self, token: str, expiration: int = 3600) -> int:
-        """
-        Confirm and decode the token. Raise an exception if invalid or expired.
-        """
-        try:
-            # The `max_age` argument should be passed here to enforce token expiration
-            user_id = self.serializer.loads(token, salt="password-reset", max_age=expiration)
-            print(f"Decoded User ID: {user_id}")
-        except Exception as e:
-            print(f"Token Validation Error: {e}")
-            raise ValueError("Invalid or expired token")
-        return user_id
+            get_user_data.email = update_user_email_data.email
+            get_user_data.updated_by = current_user.user_id
+
+         
+            db.commit()
+            db.refresh(get_user_data)
+
+            return {
+                "message": "Email updated successfully",
+                "role": get_user_data
+                }
+
+    except Exception as e:          
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Error updating email: {str(e)}")
+
+
 

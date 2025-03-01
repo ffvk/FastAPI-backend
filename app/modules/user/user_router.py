@@ -4,8 +4,8 @@ from app.db.session import get_db
 from app.utils.auth import get_current_user
 from typing import Optional
 from app.modules.user.user_model import UserModel
-from app.modules.user.user_schema import CreateUseSchema, UpdateUserSchema, DeleteUserSchema, UpdateUserRoleSchema
-from app.modules.user.user_service import get_all_users, get_user_by_id, create_user, update_user, delete_existing_user, update_user_role
+from app.modules.user.user_schema import CreateUseSchema, UpdateUserSchema, DeleteUserSchema, UpdateUserRoleSchema, UpdateUserEmailSchema
+from app.modules.user.user_service import get_all_users, get_user_by_id, create_user, update_user, delete_existing_user, update_user_role, update_user_email
 
 router = APIRouter()
 
@@ -66,7 +66,7 @@ def delete_user_endpoint(
     
     return {"message" : "User deleted successfully",}
 
-@router.put("/user-role/{user_id}", status_code=status.HTTP_200_OK)
+@router.put("/update-user-role/{user_id}", status_code=status.HTTP_200_OK)
 async def update_existing_user_role_endpoint(
     user_id: int,
     update_userRole: UpdateUserRoleSchema,
@@ -78,5 +78,18 @@ async def update_existing_user_role_endpoint(
     )
     
     return updated_userRole
+
+
+@router.put("/update-email/{user_id}", status_code=status.HTTP_200_OK)
+async def update_user_email_endpoint(
+    user_id: int,
+    updateEmail: UpdateUserEmailSchema,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+
+):
+    updated_email = update_user_email(db=db, user_id=user_id, update_user_email_data=updateEmail, current_user=current_user)
+
+    return updated_email
 
 
