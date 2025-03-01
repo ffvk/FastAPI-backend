@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     domain_url: str
     email_smtp_server: str
     email_smtp_port: int
-
+    GOOGLE_CLIENT_ID: str  # Add this line
 
     class Config:
         env_file = str(ENV_FILE)       # Specify the path to your .env file

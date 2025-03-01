@@ -17,11 +17,58 @@ from app.modules.user.auth_service import register_user, verify_email, send_veri
 
 
 
-
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
 
 
 router = APIRouter()
+@router.post("/google-login")
+def google_login(google_token: str = Form(...), db: Session = Depends(get_db)):
+    try:
+        print("Received Google token:", google_token)  # Log the received token
+
+        # Verify Google ID token
+        google_user = id_token.verify_oauth2_token(google_token, requests.Request(), settings.GOOGLE_CLIENT_ID)
+        print("Decoded Google user data:", google_user)  # Log the decoded token data
+
+        if not google_user or "email" not in google_user:
+            print("Invalid Google token")
+            raise HTTPException(status_code=400, detail="Invalid Google token")
+
+        # Check if user exists in DB
+        user = db.query(UserModel).filter(UserModel.email == google_user["email"]).first()
+        print("User found in DB:", user)  # Log user existence
+
+        if not user:
+            print("User not found, creating a new user...")  # Log user creation
+            # Create a new user if not exists
+            user = UserModel(
+                user_name=google_user["name"],
+                email=google_user["email"],
+                password_hash='',  # No password for Google login users
+                role_id=2  # Set default role ID
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            print("New user created:", user)  # Log new user details
+
+        # # Generate JWT token
+        # access_token = create_access_token(data={"sub": user.email})
+        
+         # Create an access token
+        access_token = create_access_token(
+            data={"sub": user.email},
+            expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes)
+        )
+        print("Generated access token:", access_token)  # Log the access token
+
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    except Exception as e:
+        print("Error during Google login:", str(e))  # Log errors
+        raise HTTPException(status_code=400, detail="Google login failed")
 
 
 @router.post("/login", status_code=200)
