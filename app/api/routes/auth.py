@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException,Form
+from fastapi import APIRouter, Depends, HTTPException,Form, Request
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.modules.user.user_model import UserModel
@@ -11,7 +11,6 @@ from app.core.config import settings
 from app.utils.jwt import create_access_token
 from app.utils.auth import get_current_user
 from app.modules.user.auth_service import PasswordResetTokenGenerator
-# from app.modules.role.role_model import RoleModel
 from app.modules.user.user_schema import CreateUseSchema, DeleteUserSchema
 from app.modules.user.auth_service import register_user, verify_email, send_verification_email
 
@@ -201,9 +200,9 @@ def reset_password(token: str = Form(...), new_password: str = Form(...), db: Se
 
 
 @router.post("/register", response_model=DeleteUserSchema)
-async def register_user_endpoint(user_data: CreateUseSchema, db: Session = Depends(get_db)):
+async def register_user_endpoint(user_data: CreateUseSchema, request: Request, db: Session = Depends(get_db), ):
     
-    await register_user(db=db, register_user_data=user_data)
+    await register_user(db=db, register_user_data=user_data, request=request)
     
     return {"message" : "Register successfully",}
 

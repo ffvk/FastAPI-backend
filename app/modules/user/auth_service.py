@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.modules.user.user_model import UserModel
 from app.modules.role.role_model import RoleModel
 from app.modules.user.user_schema import CreateUseSchema
-from fastapi import  HTTPException
+from fastapi import  HTTPException, Request
 from datetime import datetime, timedelta
 from app.utils.password import hash_password
 from app.utils.jwt import verify_access_token, create_access_token
@@ -54,7 +54,8 @@ async def send_verification_email(email: str, token: str):
 
 async def register_user(
     db: Session,
-    register_user_data: CreateUseSchema
+    register_user_data: CreateUseSchema,
+    request: Request
 ):
     try:
         existing_user = db.query(UserModel).filter(UserModel.email == register_user_data.email).first()
@@ -71,12 +72,15 @@ async def register_user(
         # Hash the password before storing
         hashed_password = hash_password(register_user_data.password_hash)
 
+        ip_address = request.client.host
+
         # Create new user with is_active = False
         user_dict = register_user_data.dict(exclude_unset=True)
         user_dict["password_hash"] = hashed_password
         user_dict["role_id"] = customer_role.role_id
         user_dict["is_active"] = False  
         user_dict["created_at"] = datetime.utcnow()
+        user_dict["ip_address"] = ip_address
 
         new_user = UserModel(**user_dict)
 
