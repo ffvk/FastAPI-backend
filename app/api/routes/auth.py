@@ -1,25 +1,73 @@
-from fastapi import APIRouter, Depends, HTTPException,Form
+from fastapi import APIRouter, Depends, HTTPException,Form, Request
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.modules.user.user_model import UserModel
 from app.utils.jwt import create_access_token
 from app.utils.password import verify_password
-from datetime import timedelta
+from datetime import timedelta,datetime
 from app.utils.email import send_email, render_email_template
 from app.utils.password import hash_password, verify_password, validate_password
 from app.core.config import settings
-from datetime import  timedelta
 from app.utils.jwt import create_access_token
 from app.utils.auth import get_current_user
-from app.modules.user.user_service import PasswordResetTokenGenerator
+from app.modules.user.auth_service import PasswordResetTokenGenerator
+from app.modules.user.user_schema import CreateUseSchema, DeleteUserSchema
+from app.modules.user.auth_service import register_user, verify_email, send_verification_email
 
 
 
-
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
 
 
 router = APIRouter()
+@router.post("/google-login")
+def google_login(google_token: str = Form(...), db: Session = Depends(get_db)):
+    try:
+        print("Received Google token:", google_token)  # Log the received token
+
+        # Verify Google ID token
+        google_user = id_token.verify_oauth2_token(google_token, requests.Request(), settings.GOOGLE_CLIENT_ID)
+        print("Decoded Google user data:", google_user)  # Log the decoded token data
+
+        if not google_user or "email" not in google_user:
+            print("Invalid Google token")
+            raise HTTPException(status_code=400, detail="Invalid Google token")
+
+        # Check if user exists in DB
+        user = db.query(UserModel).filter(UserModel.email == google_user["email"]).first()
+        print("User found in DB:", user)  # Log user existence
+
+        if not user:
+            print("User not found, creating a new user...")  # Log user creation
+            # Create a new user if not exists
+            user = UserModel(
+                user_name=google_user["name"],
+                email=google_user["email"],
+                password_hash='',  # No password for Google login users
+                role_id=2  # Set default role ID
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            print("New user created:", user)  # Log new user details
+
+        # # Generate JWT token
+        # access_token = create_access_token(data={"sub": user.email})
+        
+         # Create an access token
+        access_token = create_access_token(
+            data={"sub": user.email},
+            expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes)
+        )
+        print("Generated access token:", access_token)  # Log the access token
+
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    except Exception as e:
+        print("Error during Google login:", str(e))  # Log errors
+        raise HTTPException(status_code=400, detail="Google login failed")
 
 
 @router.post("/login", status_code=200)
@@ -108,6 +156,7 @@ def forgot_password(email: str = Form(...), db: Session = Depends(get_db)):
     # Return a success message to the client
     return {"message": "Password reset link sent to your email"}
 
+
 @router.post("/reset-password", status_code=200)
 def reset_password(token: str = Form(...), new_password: str = Form(...), db: Session = Depends(get_db)):
    
@@ -150,3 +199,24 @@ def reset_password(token: str = Form(...), new_password: str = Form(...), db: Se
     return {"message": "Password reset successful"}
 
 
+@router.post("/register", response_model=DeleteUserSchema)
+async def register_user_endpoint(user_data: CreateUseSchema, request: Request, db: Session = Depends(get_db), ):
+    
+    await register_user(db=db, register_user_data=user_data, request=request)
+    
+    return {"message" : "Register successfully",}
+
+
+@router.get("/verify-email", response_model=DeleteUserSchema)
+def verify_email_endpoint(token: str, db: Session = Depends(get_db)):
+
+    verify_email(token=token, db=db )
+
+    return {"message": "Email verified successfully!"}
+
+
+
+@router.post("/send-verification-email", response_model=DeleteUserSchema)
+async  def send_verification_email_endpoint(email: str, token: str):
+    await send_verification_email(email=email, token=token )
+    return {"message": "Email successfully send"}

@@ -53,7 +53,7 @@ def custom_openapi():
     openapi_schema = get_openapi(
         title="FastAPI MySQL App",
         version="1.0.0",
-        description="API documentation for Logistic Application",
+        description="API documentation for PMS Application",
         routes=app.routes,
     )
 

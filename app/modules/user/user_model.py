@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime,ForeignKey
 from datetime import datetime
 from app.db.base import Base
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import INET
 
 
 class UserModel(Base):
@@ -12,8 +13,9 @@ class UserModel(Base):
     password_hash = Column(String(255), nullable=False)
     user_name = Column(String(255), nullable=False)
     phone_number = Column(String(20), nullable=True)
+    ip_address = Column(String(39), nullable=True)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
